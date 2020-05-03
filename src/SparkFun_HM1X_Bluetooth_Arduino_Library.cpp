@@ -2760,38 +2760,41 @@ void HM1X_BT::setI2cAddress(uint8_t address)
 
 HM1X_error_t HM1X_BT::forceBaud(unsigned long baud)
 {
+    HM1X_error_t err;
     switch (baud) {
     case 1200:
-        forceBaud(HM1X_BAUD_1200);
+        err = forceBaud(HM1X_BAUD_1200);
         break;
     case 2400:
-        forceBaud(HM1X_BAUD_2400);
+        err = forceBaud(HM1X_BAUD_2400);
         break;
     case 4800:
-        forceBaud(HM1X_BAUD_4800);
+        err = forceBaud(HM1X_BAUD_4800);
         break;
     case 9600:
-        forceBaud(HM1X_BAUD_9600);
+        err = forceBaud(HM1X_BAUD_9600);
         break;
     case 19200:
-        forceBaud(HM1X_BAUD_19200);
+        err = forceBaud(HM1X_BAUD_19200);
         break;
     case 38400:
-        forceBaud(HM1X_BAUD_38400);
+        err = forceBaud(HM1X_BAUD_38400);
         break;
     case 57600:
-        forceBaud(HM1X_BAUD_57600);
+        err = forceBaud(HM1X_BAUD_57600);
         break;
     case 115200:
-        forceBaud(HM1X_BAUD_115200);
+        err = forceBaud(HM1X_BAUD_115200);
         break;
     case 230400:
-        forceBaud(HM1X_BAUD_230400);
+        err = forceBaud(HM1X_BAUD_230400);
         break;
     default:
-        // Do nothing on unsupported baud
-        break;
+        // Return error on unsupported baud
+        err = HM1X_ERROR_ER;
     }
+
+    return err;
 }
 
 HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
