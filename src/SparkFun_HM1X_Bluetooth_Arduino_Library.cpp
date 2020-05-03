@@ -115,7 +115,16 @@ typedef enum {
 } qwiic_bt_commands_t;
 #endif
 
-static const long btBauds[HM1X_BT::NUM_HM1X_BAUDS] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 230400};
+static const long btBauds[HM1X_BT::NUM_HM1X_BAUDS] = {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400};
+
+// These are arrays that maps the required baudChar for each desired baud rate declared in the enum HM1X_baud_t
+static const uint8_t btBauds_HM10_11[HM1X_BT::NUM_HM1X_BAUDS] =        {3, 4, 5, 6, 7, 2, 1, 0, 8};
+static const uint8_t btBauds_HM16_17_18_19[HM1X_BT::NUM_HM1X_BAUDS] =  {0, 1, 2, 3, 4, 5, 6, 7, 8};
+static const uint8_t btBauds_HM12_13[HM1X_BT::NUM_HM1X_BAUDS] =        {0, 2, 3, 4, 5, 6, 7, 8, 0};
+
+static const uint8_t btBauds_validRange_HM10_11[2] =        {0, 8};
+static const uint8_t btBauds_validRange_HM16_17_18_19[2] =  {0, 8};
+static const uint8_t btBauds_validRange_HM12_13[2] =        {1, 7};
 
 HM1X_BT::HM1X_BT(HM1X_model_t btModel)
 {
