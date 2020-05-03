@@ -126,6 +126,7 @@ static const uint8_t btBauds_validRange_HM10_11[2] =        {0, 8};
 static const uint8_t btBauds_validRange_HM16_17_18_19[2] =  {0, 8};
 static const uint8_t btBauds_validRange_HM12_13[2] =        {1, 7};
 
+// Class Constructor
 HM1X_BT::HM1X_BT(HM1X_model_t btModel)
 {
     _btModel = btModel;
@@ -138,6 +139,10 @@ HM1X_BT::HM1X_BT(HM1X_model_t btModel)
 
     _polling = false;
 
+    // set model-specific variables
+    // _isEdrSupported, _btBauds_ptr, and _validBaudBounds_ptr
+    setModelSpecificVariables();
+
 #ifdef HM1X_SOFTWARE_SERIAL_ENABLED
     _softSerial = NULL;
 #endif
@@ -148,6 +153,12 @@ HM1X_BT::HM1X_BT(HM1X_model_t btModel)
     _wirePort = NULL;
     _wireAddress = 0;
 #endif
+}
+
+// set model-specific variables
+    // _isEdrSupported, _btBauds_ptr, and _validBaudBounds_ptr
+void HM1X_BT::setModelSpecificVariables(void){
+    
 }
 
 #ifdef HM1X_SOFTWARE_SERIAL_ENABLED

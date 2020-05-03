@@ -318,7 +318,17 @@ private:
     boolean _polling;
 
     // pointer to the proper baud mapping array per model
+    // should be set during class construction
     uint8_t * _btBauds_ptr;
+
+    // pointer to valid baud indices
+    uint8_t * _validBaudBounds_ptr;
+
+    // boolean to determine whether EDR is supported
+    // should be set during class construction
+    boolean _isEdrSupported;
+
+    void setModelSpecificVariables();
 
     HM1X_error_t init(void);
 
