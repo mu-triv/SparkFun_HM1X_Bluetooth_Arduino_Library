@@ -48,8 +48,10 @@ const char HM1X_COMMAND_EDR_NAME[] = "NAME";
 const char HM1X_COMMAND_BLE_NAME[] = "NAMB";
 const char HM1X_COMMAND_EDR_ADR[] = "ADDE";
 const char HM1X_COMMAND_BLE_ADR[] = "ADDB";
+const char HM1X_COMMAND_BLE_ADR_SINGLE[] = "ADDR";
 const char HM1X_COMMAND_LAST_EDR[] = "RADE";
 const char HM1X_COMMAND_LAST_BLE[] = "RADB";
+const char HM1X_COMMAND_LAST_SINGLE[] = "RADD";
 const char HM1X_COMMAND_CLEAR_BOND_EDR[] = "BONDE";
 const char HM1X_COMMAND_CLEAR_BOND_BLE[] = "BONDB";
 const char HM1X_COMMAND_CLEAR_ADR_EDR[] = "CLEAE";
@@ -876,7 +878,7 @@ HM1X_error_t HM1X_BT::setBleName(const char * name)
         // use the code for Edr (main)
         strcpy(command_no_ble, HM1X_COMMAND_EDR_NAME);
     }else{
-        // use HM1X_COMMAND_BLE_NAME as is
+        // use as is
         strcpy(command_no_ble, HM1X_COMMAND_BLE_NAME);
     }
 
@@ -973,14 +975,30 @@ String HM1X_BT::bleAddress(void)
 }
 
 // AT+ADDB -- BLE address
+// AT+ADDR for non-dual devices
 HM1X_error_t HM1X_BT::bleAddress(char * retAddress)
 {
     char * command;
     char * response;
+    char *command_no_ble;
 
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_ADR) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_ADR_SINGLE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_ADR_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_NAME);
+    }
+
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    strcpy(command, HM1X_COMMAND_BLE_ADR);
+    strcpy(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     response = (char *) calloc(20 + 1, sizeof(char));
@@ -992,6 +1010,7 @@ HM1X_error_t HM1X_BT::bleAddress(char * retAddress)
     
     free(response);
     free(command);
+    free(command_no_ble);
 
     return HM1X_SUCCESS;
 }
@@ -1032,10 +1051,25 @@ HM1X_error_t HM1X_BT::lastBleAddress(char * address)
 {
     char * command;
     char * response;
+    char *command_no_ble;
 
-    command = (char *) calloc(strlen(HM1X_COMMAND_LAST_BLE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_LAST_BLE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_LAST_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_LAST_BLE);
+    }
+
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    strcpy(command, HM1X_COMMAND_LAST_BLE);
+    strcpy(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     response = (char *) calloc(20 + 1, sizeof(char));
@@ -1047,6 +1081,7 @@ HM1X_error_t HM1X_BT::lastBleAddress(char * address)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;
 }
