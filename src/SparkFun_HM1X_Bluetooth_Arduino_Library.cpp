@@ -873,6 +873,8 @@ HM1X_error_t HM1X_BT::setBleName(const char * name)
     return err;
 }
 
+// checks EDR address
+// does not support HM-15/16/17/18/19
 String HM1X_BT::edrAddress(void)
 {
     char * address;
@@ -885,10 +887,18 @@ String HM1X_BT::edrAddress(void)
 }
 
 // AT+ADDE -- EDR address
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::edrAddress(char * retAddress)
 {
     char * command;
     char * response;
+
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_ADR) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
@@ -944,10 +954,19 @@ HM1X_error_t HM1X_BT::bleAddress(char * retAddress)
 }
 
 // AT+RADE, AT+RADB -- Last connected EDR/BLE address
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::lastEdrAddress(char * address)
 {
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     command = (char *) calloc(strlen(HM1X_COMMAND_LAST_EDR) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
@@ -991,11 +1010,20 @@ HM1X_error_t HM1X_BT::lastBleAddress(char * address)
 }
 
 // AT+BONDE, AT+BONDB --- Clear EDR/BLE bond info
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::clearEdrBond(void)
 {
     HM1X_error_t err;
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Build command: e.g. AT+BONDE
     command = (char *) calloc(strlen(HM1X_COMMAND_CLEAR_BOND_EDR) + 1, sizeof(char));
@@ -1060,11 +1088,20 @@ HM1X_error_t HM1X_BT::clearBleBond(void)
 }
 
 // AT+CLEAE, AT+CLEAB -- Clear last connected EDR/BLE address
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::clearEdrConnected(void)
 {
     HM1X_error_t err;
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Build command: e.g. AT+CLEAE
     command = (char *) calloc(strlen(HM1X_COMMAND_CLEAR_ADR_EDR) + 1, sizeof(char));
@@ -1129,10 +1166,19 @@ HM1X_error_t HM1X_BT::clearBleConnected(void)
 }
 
 // AT+ROLE, AT+ROLB -- EDR/BLE mode
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::getEdrMode(HM1X_edr_mode_t * mode)
 {
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Set command string: "AT+ROLE?""
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_MODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
@@ -1167,12 +1213,22 @@ HM1X_error_t HM1X_BT::getEdrMode(HM1X_edr_mode_t * mode)
     return HM1X_SUCCESS;
 }
 
+// sets the EDR mode
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::setEdrMode(HM1X_edr_mode_t mode)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     char modeParam;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
     
     if (mode == EDR_MODE_INVALID)
     {
@@ -1305,13 +1361,20 @@ HM1X_error_t HM1X_BT::enableHighSpeedSPP(boolean enabled)
     return err;
 }
 
-
+// This is only supported in HM12/13/14
 HM1X_error_t HM1X_BT::enableDualMode(boolean enabled)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     char hsParam;
+
+    // Check if device is supported
+    if( (_btModel != HM12) || (_btModel != HM13) || (_btModel != HM14))
+    {
+        // devices other than HM12/13/14 are not supported
+        return HM1X_ERROR_ER;
+    }
 
     // Build command: e.g. AT+DUAL0
     command = (char *) calloc(strlen(HM1X_COMMAND_DUAL_WORK_MODE) + 2, sizeof(char));
@@ -1432,10 +1495,19 @@ HM1X_error_t HM1X_BT::enableAuthenticationMode(boolean enable)
 }
 
 // AT+PINE, AT+PINB -- EDR/BLE PIN Code
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::getEdrPin(char * code)
 {
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Set command string: "AT+PINE?""
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_PIN_CODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
