@@ -2385,43 +2385,20 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     char * response;
     char * hsParam;
     char * baudChar;
-
-    if ((atob >= NUM_HM1X_BAUDS))
-    {
-        return HM1X_UNEXPECTED_RESPONSE;
-    }
+    uint8_t baudCharNum;
 
     command = (char *) calloc(strlen(HM1X_COMMAND_BAUD) + 2, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
 
     // Build command: e.g. AT+BAUD2
-    switch (atob)
-    {
-        case HM1X_BAUD_4800:
-            baudChar = "1";
-            break;
-        case HM1X_BAUD_9600:
-            baudChar = "2";
-            break;
-        case HM1X_BAUD_19200:
-            baudChar = "3";
-            break;
-        case HM1X_BAUD_38400:
-            baudChar = "4";
-            break;
-        case HM1X_BAUD_57600:
-            baudChar = "5";
-            break;
-        case HM1X_BAUD_115200:
-            baudChar = "6";
-            break;
-        case HM1X_BAUD_230400:
-            baudChar = "7";
-            break;
-        default:
-            baudChar = "2";
-            break;
+    // Handle cases according to model
+    if (findBaudFromArray(atob, baudCharNum) != HM1X_SUCCESS){
+
+        return HM1X_UNEXPECTED_RESPONSE;
+    
     }
+    baudChar = "0" + baudCharNum;
+
     strcpy(command, HM1X_COMMAND_BAUD);
     strcat(command, baudChar);
 
