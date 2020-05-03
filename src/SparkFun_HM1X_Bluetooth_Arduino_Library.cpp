@@ -156,9 +156,37 @@ HM1X_BT::HM1X_BT(HM1X_model_t btModel)
 }
 
 // set model-specific variables
-    // _isEdrSupported, _btBauds_ptr, and _validBaudBounds_ptr
+// _isEdrSupported, _btBauds_ptr, and _validBaudBounds_ptr
 void HM1X_BT::setModelSpecificVariables(void){
-    
+
+    switch(_btModel)
+    {
+        case HM10:
+        case HM11:
+            // HM-10/11: only allow P0~8
+            _isEdrSupported = false;
+            _validBaudBounds_ptr = &btBauds_validRange_HM10_11[0];
+            _btBauds_ptr = &btBauds_HM10_11[0];
+            break;
+        case HM12:
+        case HM13:
+            // HM-12/13
+            _isEdrSupported = true;
+            _validBaudBounds_ptr = &btBauds_validRange_HM12_13[0];
+            _btBauds_ptr = &btBauds_HM12_13[0];
+            break;
+        case HM14:
+        case HM15:
+        case HM16:
+        case HM17:
+        case HM18:
+        case HM19:
+            // HM-14 to 19
+            _isEdrSupported = false;
+            _validBaudBounds_ptr = &btBauds_validRange_HM16_17_18_19[0];
+            _btBauds_ptr = &btBauds_HM16_17_18_19[0];
+            break;
+    }
 }
 
 #ifdef HM1X_SOFTWARE_SERIAL_ENABLED
@@ -2401,7 +2429,7 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     char * hsParam;
     char * baudChar;
 
-    if ((atob == HM1X_BAUD_INVALID) || (atob >= NUM_HM1X_BAUDS))
+    if ((atob >= NUM_HM1X_BAUDS))
     {
         return HM1X_UNEXPECTED_RESPONSE;
     }
