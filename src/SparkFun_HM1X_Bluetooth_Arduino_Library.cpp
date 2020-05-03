@@ -115,7 +115,7 @@ typedef enum {
 } qwiic_bt_commands_t;
 #endif
 
-static const long btBauds[HM1X_BT::NUM_HM1X_BAUDS] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 320400};
+static const long btBauds[HM1X_BT::NUM_HM1X_BAUDS] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 230400};
 
 HM1X_BT::HM1X_BT(HM1X_model_t btModel)
 {
