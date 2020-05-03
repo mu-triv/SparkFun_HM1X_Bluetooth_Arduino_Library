@@ -2384,7 +2384,7 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     char * command;
     char * response;
     char * hsParam;
-    char * baudChar;
+    char * baudChar = (char*)"0";
     uint8_t baudCharNum;
 
     command = (char *) calloc(strlen(HM1X_COMMAND_BAUD) + 2, sizeof(char));
@@ -2397,7 +2397,8 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
         return HM1X_UNEXPECTED_RESPONSE;
     
     }
-    baudChar = (char*)"0" + baudCharNum;
+
+    baudChar[0] = (char)'0' + baudCharNum;
 
     strcpy(command, HM1X_COMMAND_BAUD);
     strcat(command, baudChar);
@@ -2412,7 +2413,7 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     strcat(response, HM1X_RESPONSE_OK);
     strcat(response, HM1X_RESPONSE_SET);
     strcat(response, baudChar);
-
+    
     err = sendCommandWithResponseAndTimeout(command, response, HM1X_DEFAULT_TIMEOUT);
     
     free(command);
