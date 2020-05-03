@@ -316,6 +316,9 @@ private:
 
     boolean _polling;
 
+    // pointer to the proper baud mapping array per model
+    uint8_t * _btBauds_ptr;
+
     HM1X_error_t init(void);
 
     // Send command with an expected response string/length -- e.g. "OK":
