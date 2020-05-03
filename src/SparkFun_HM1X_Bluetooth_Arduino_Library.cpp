@@ -804,14 +804,29 @@ HM1X_error_t HM1X_BT::getBleName(char * name)
     char * command;
     char * response;
     int retNameLen;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_NAME), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_NAME);
+    }else{
+        // use HM1X_COMMAND_BLE_NAME as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_NAME);
+    }
 
     // Create command string: AT+NAMB?
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_NAME) + strlen(HM1X_QUERY_STRING) + 2, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 2, sizeof(char));
     if (command == NULL)
     {
         return HM1X_OUT_OF_MEMORY;
     }
-    strcat(command, HM1X_COMMAND_BLE_NAME);
+    strcat(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     // Allocate enough memory for a response (up to 28 bytes + "OK+Get:")
@@ -830,6 +845,7 @@ HM1X_error_t HM1X_BT::getBleName(char * name)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;
 }
