@@ -292,6 +292,7 @@ public:
     } HM1X_baud_t;
     HM1X_error_t setBaud(HM1X_baud_t atob);
     HM1X_error_t setBaud(uint32_t baud);
+    HM1X_error_t findBaudFromArray(HM1X_baud_t atob, uint8_t &num);
 
 private:
     
