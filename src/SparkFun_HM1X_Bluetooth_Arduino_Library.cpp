@@ -2397,7 +2397,7 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
         return HM1X_UNEXPECTED_RESPONSE;
     
     }
-    baudChar = "0" + baudCharNum;
+    baudChar = static_cast<char*>("0") + baudCharNum;
 
     strcpy(command, HM1X_COMMAND_BAUD);
     strcat(command, baudChar);
@@ -2761,6 +2761,12 @@ void HM1X_BT::setI2cAddress(uint8_t address)
 HM1X_error_t HM1X_BT::forceBaud(unsigned long baud)
 {
     switch (baud) {
+    case 1200:
+        forceBaud(HM1X_BAUD_1200);
+        break;
+    case 2400:
+        forceBaud(HM1X_BAUD_2400);
+        break;
     case 4800:
         forceBaud(HM1X_BAUD_4800);
         break;
