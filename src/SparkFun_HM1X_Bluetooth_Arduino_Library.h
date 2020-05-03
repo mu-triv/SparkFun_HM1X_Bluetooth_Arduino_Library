@@ -71,6 +71,8 @@ typedef enum {
     HM1X_SUCCESS             = 0
 } HM1X_error_t;
 
+
+
 class HM1X_BT : public Print {
 public:
     
