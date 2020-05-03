@@ -279,7 +279,8 @@ public:
 
     // AT+BAUD -- Baud rate
     typedef enum {
-        HM1X_BAUD_INVALID,
+        HM1X_BAUD_1200,
+        HM1X_BAUD_2400,
         HM1X_BAUD_4800,
         HM1X_BAUD_9600,
         HM1X_BAUD_19200,
