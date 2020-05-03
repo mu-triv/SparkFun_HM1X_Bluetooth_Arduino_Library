@@ -2421,6 +2421,10 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     return err;
 }
 
+/////////////
+// Private //
+/////////////
+
 // returns the integer that corresponds to the correct baud rate depending on the model
 HM1X_error_t HM1X_BT::findBaudFromArray(HM1X_baud_t atob, uint8_t &num){
     
@@ -2444,10 +2448,6 @@ HM1X_error_t HM1X_BT::findBaudFromArray(HM1X_baud_t atob, uint8_t &num){
     return HM1X_UNEXPECTED_RESPONSE;
     
 }
-
-/////////////
-// Private //
-/////////////
 
 HM1X_error_t HM1X_BT::init(void)
 {
