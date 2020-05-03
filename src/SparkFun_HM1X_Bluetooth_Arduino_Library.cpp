@@ -638,10 +638,13 @@ HM1X_error_t HM1X_BT::notify(boolean enabled, boolean withAddress)
     return err;
 }
 
+// gets EDR name as return value
+// does not support HM-15/16/17/18/19
 String HM1X_BT::getEdrName(void)
 {
     char * name;
     String retName = "";
+
     name = (char *)malloc(32* sizeof(char));
     if (name != NULL)
     {
@@ -653,13 +656,22 @@ String HM1X_BT::getEdrName(void)
     return retName;
 }
 
-// AT+NAME, AT+NAMB -- Set EDR/BLE name
+// Set EDR name and copy it to the character array name
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::getEdrName(char * name)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     int retNameLen;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Create command string: AT+NAME?
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_NAME) + strlen(HM1X_QUERY_STRING) + 2, sizeof(char));
@@ -690,20 +702,40 @@ HM1X_error_t HM1X_BT::getEdrName(char * name)
     return HM1X_SUCCESS;
 }
 
+// Set the EDR device name with the input string parameter
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::setEdrName(String name)
 {
     char * edrChar;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
+
     edrChar = (char *) calloc(name.length() + 1, sizeof(char));
     name.toCharArray(edrChar, name.length() + 1);
     return setEdrName(edrChar);
 }
 
+// Set EDR name and copy it to the character array name
 HM1X_error_t HM1X_BT::setEdrName(const char * name)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     int nameLen;
+
+    // Check if EDR is supported
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     nameLen = strlen(name);
 
