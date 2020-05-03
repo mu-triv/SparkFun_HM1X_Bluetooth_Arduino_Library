@@ -2397,7 +2397,7 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
         return HM1X_UNEXPECTED_RESPONSE;
     
     }
-    baudChar = static_cast<char*>("0") + baudCharNum;
+    baudChar = (char*)"0" + baudCharNum;
 
     strcpy(command, HM1X_COMMAND_BAUD);
     strcat(command, baudChar);
@@ -2797,12 +2797,15 @@ HM1X_error_t HM1X_BT::forceBaud(unsigned long baud)
     return err;
 }
 
+// sweeps for all possible baud rates then force-set to the indicated baud rate
 HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
 {    
     HM1X_error_t err;
+    uint8_t idx;
 
-    for (uint8_t i = HM1X_BAUD_4800; i < NUM_HM1X_BAUDS; i++) 
+    for (uint8_t i = _validBaudBounds_ptr[0]; i < _validBaudBounds_ptr[1]; i++) 
     {
+        idx = _btBauds_ptr[i];
         if (0)
         {
             
@@ -2810,7 +2813,7 @@ HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
 #ifdef HM1X_SOFTWARE_SERIAL_ENABLED
         else if (_softSerial != NULL)
         {
-            _softSerial->begin(btBauds[i]);
+            _softSerial->begin(btBauds[idx]);
         }
 #endif
 #ifdef HM1X_I2C_ENABLED
@@ -2822,7 +2825,7 @@ HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
 #ifdef HM1X_HARDWARE_SERIAL_ENABLED
         else if (_serialPort != NULL)
         {
-            _serialPort->begin(btBauds[i]);
+            _serialPort->begin(btBauds[idx]);
         }
 #endif
         err = setBaud(baud);
