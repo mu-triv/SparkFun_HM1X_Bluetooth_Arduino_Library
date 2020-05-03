@@ -714,9 +714,8 @@ HM1X_error_t HM1X_BT::getEdrName(char * name)
     int retNameLen;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -757,9 +756,8 @@ HM1X_error_t HM1X_BT::setEdrName(String name)
     char * edrChar;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -778,9 +776,8 @@ HM1X_error_t HM1X_BT::setEdrName(const char * name)
     int nameLen;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -1009,9 +1006,8 @@ HM1X_error_t HM1X_BT::lastEdrAddress(char * address)
     char * response;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -1066,9 +1062,8 @@ HM1X_error_t HM1X_BT::clearEdrBond(void)
     char * response;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -1144,9 +1139,8 @@ HM1X_error_t HM1X_BT::clearEdrConnected(void)
     char * response;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -1221,9 +1215,8 @@ HM1X_error_t HM1X_BT::getEdrMode(HM1X_edr_mode_t * mode)
     char * response;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -1271,9 +1264,8 @@ HM1X_error_t HM1X_BT::setEdrMode(HM1X_edr_mode_t mode)
     char modeParam;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
@@ -1550,9 +1542,8 @@ HM1X_error_t HM1X_BT::getEdrPin(char * code)
     char * response;
 
     // Check if EDR is supported
-    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    if ( !_isEdrSupported )
     {
-        // HM-15 to HM-19 does not support EDR
         // return error
         return HM1X_ERROR_ER;
     }
