@@ -1492,10 +1492,10 @@ HM1X_error_t HM1X_BT::enableDualMode(boolean enabled)
     char * response;
     char hsParam;
 
-    // Check if device is supported
-    if( (_btModel != HM12) || (_btModel != HM13) || (_btModel != HM14))
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
     {
-        // devices other than HM12/13/14 are not supported
+        // return error
         return HM1X_ERROR_ER;
     }
 
