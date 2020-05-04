@@ -56,6 +56,7 @@ const char HM1X_COMMAND_CLEAR_BOND_EDR[] = "BONDE";
 const char HM1X_COMMAND_CLEAR_BOND_BLE[] = "BONDB";
 const char HM1X_COMMAND_CLEAR_ADR_EDR[] = "CLEAE";
 const char HM1X_COMMAND_CLEAR_ADR_BLE[] = "CLEAB";
+const char HM1X_COMMAND_CLEAR_ADR_SINGLE[] = "CLEAR";
 const char HM1X_COMMAND_EDR_MODE[] = "ROLE";
 const char HM1X_COMMAND_BLE_MODE[] = "ROLB";
 const char HM1X_COMMAND_HIGH_SPEED_SPP[] = "HIGH";
@@ -65,6 +66,7 @@ const char HM1X_COMMAND_A_TO_B_MODE[] = "ATOB";
 const char HM1X_COMMAND_AUTHENTICATION_MODE[] = "AUTH";
 const char HM1X_COMMAND_EDR_PIN_CODE[] = "PINE";
 const char HM1X_COMMAND_BLE_PIN_CODE[] = "PINB";
+const char HM1X_COMMAND_PIN_CODE_SINGLE[] = "PASS";
 const char HM1X_COMMAND_COD[] = "COFD";
 const char HM1X_COMMAND_UPDATE_CON_PARAM[] = "COUP";
 const char HM1X_COMMAND_IBEACON_SWITCH[] = "IBEA";
@@ -1211,18 +1213,33 @@ HM1X_error_t HM1X_BT::clearBleConnected(void)
     HM1X_error_t err;
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_CLEAR_ADR_BLE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_CLEAR_ADR_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_CLEAR_ADR_BLE);
+    }
 
     // Build command: e.g. AT+CLEAB
-    command = (char *) calloc(strlen(HM1X_COMMAND_CLEAR_ADR_BLE) + 1, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + 1, sizeof(char));
     if (command == NULL)
     {
         return HM1X_OUT_OF_MEMORY;
     }
-    strcat(command, HM1X_COMMAND_CLEAR_ADR_BLE);
+    strcat(command, command_no_ble);
 
     // Build expected response: e.g. OK+CLEAB
     response = (char *) calloc(strlen(HM1X_RESPONSE_OK) + strlen(HM1X_RESPONSE_PLUS)
-                    + strlen(HM1X_COMMAND_CLEAR_ADR_BLE) + 1, sizeof(char));
+                    + strlen(command_no_ble) + 1, sizeof(char));
     if (response == NULL)
     {
         free(command);
@@ -1230,12 +1247,13 @@ HM1X_error_t HM1X_BT::clearBleConnected(void)
     }
     strcat(response, HM1X_RESPONSE_OK);
     strcat(response, HM1X_RESPONSE_PLUS);
-    strcat(response, HM1X_COMMAND_CLEAR_ADR_BLE);
+    strcat(response, command_no_ble);
 
     err = sendCommandWithResponseAndTimeout(command, response, HM1X_DEFAULT_TIMEOUT);
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
@@ -1334,11 +1352,26 @@ HM1X_error_t HM1X_BT::getBleMode(HM1X_ble_mode_t * mode)
 {
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_MODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_MODE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_MODE);
+    }
 
     // Set command string: "AT+ROLE?""
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_MODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    strcpy(command, HM1X_COMMAND_BLE_MODE);
+    strcpy(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     response = (char *) calloc(sizeof(HM1X_RESPONSE_OK) + sizeof(HM1X_RESPONSE_GET) + 2, sizeof(char));
@@ -1364,6 +1397,7 @@ HM1X_error_t HM1X_BT::getBleMode(HM1X_ble_mode_t * mode)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;
 }
@@ -1374,16 +1408,31 @@ HM1X_error_t HM1X_BT::setBleMode(HM1X_ble_mode_t mode)
     char * command;
     char * response;
     char modeParam;
+    char *command_no_ble;
     
     if (mode == EDR_MODE_INVALID)
     {
         return HM1X_UNEXPECTED_RESPONSE;
     }
 
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_MODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_MODE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_MODE);
+    }
+
     // Build command: e.g. AT+ROLB0
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_MODE) + 2, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + 2, sizeof(char));
     modeParam = (mode == EDR_SLAVE) ? '0' : '1';
-    sprintf(command, "%s%c", HM1X_COMMAND_BLE_MODE, modeParam);
+    sprintf(command, "%s%c", command_no_ble, modeParam);
 
     // Build expected response: e.g. OK+Set:0
     response = (char *) calloc(strlen(HM1X_RESPONSE_OK) + strlen(HM1X_RESPONSE_SET) + 2, sizeof(char));
@@ -1398,6 +1447,7 @@ HM1X_error_t HM1X_BT::setBleMode(HM1X_ble_mode_t mode)
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
@@ -1604,11 +1654,26 @@ HM1X_error_t HM1X_BT::getBlePin(char * code)
 {
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for single
+        strcpy(command_no_ble, HM1X_COMMAND_PIN_CODE_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_PIN_CODE);
+    }
 
     // Set command string: "AT+PINB?""
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    sprintf(command, "%s%s", HM1X_COMMAND_BLE_PIN_CODE, HM1X_QUERY_STRING);
+    sprintf(command, "%s%s", command_no_ble, HM1X_QUERY_STRING);
 
     response = (char *) calloc(sizeof(HM1X_RESPONSE_OK) + sizeof(HM1X_RESPONSE_GET) + 8, sizeof(char));
     if (response == NULL) return HM1X_OUT_OF_MEMORY;
@@ -1619,6 +1684,7 @@ HM1X_error_t HM1X_BT::getBlePin(char * code)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;    
 }
@@ -1659,14 +1725,30 @@ HM1X_error_t HM1X_BT::setBlePin(char * code)
     HM1X_error_t err;
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for single
+        strcpy(command_no_ble, HM1X_COMMAND_PIN_CODE_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_PIN_CODE);
+    }
+    
 
     if (strlen(code) > 6) return HM1X_UNEXPECTED_RESPONSE;
     // TODO: Should check if the code is numeric here
 
     // Build command: e.g. AT+EDR1234
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE) + 8, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + 8, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    sprintf(command, "%s%s", HM1X_COMMAND_BLE_PIN_CODE, code);
+    sprintf(command, "%s%s", command_no_ble, code);
 
     // Build expected response: e.g. OK+Set:1234
     response = (char *) calloc(strlen(HM1X_RESPONSE_OK) + strlen(HM1X_RESPONSE_SET) + 8, sizeof(char));
@@ -1681,6 +1763,7 @@ HM1X_error_t HM1X_BT::setBlePin(char * code)
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
