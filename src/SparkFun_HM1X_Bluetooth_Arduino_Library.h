@@ -71,6 +71,8 @@ typedef enum {
     HM1X_SUCCESS             = 0
 } HM1X_error_t;
 
+
+
 class HM1X_BT : public Print {
 public:
     
@@ -279,7 +281,8 @@ public:
 
     // AT+BAUD -- Baud rate
     typedef enum {
-        HM1X_BAUD_INVALID,
+        HM1X_BAUD_1200,
+        HM1X_BAUD_2400,
         HM1X_BAUD_4800,
         HM1X_BAUD_9600,
         HM1X_BAUD_19200,
@@ -315,6 +318,21 @@ private:
     String _response;
 
     boolean _polling;
+
+    // pointer to the proper baud mapping array per model
+    // should be set during class construction
+    uint8_t const * _btBauds_ptr;
+
+    // pointer to valid baud indices
+    uint8_t const * _validBaudBounds_ptr;
+
+    // boolean to determine whether EDR is supported
+    // should be set during class construction
+    boolean _isEdrSupported;
+
+    void setModelSpecificVariables();
+
+    HM1X_error_t findBaudFromArray(HM1X_baud_t atob, uint8_t &num);
 
     HM1X_error_t init(void);
 

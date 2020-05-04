@@ -48,12 +48,15 @@ const char HM1X_COMMAND_EDR_NAME[] = "NAME";
 const char HM1X_COMMAND_BLE_NAME[] = "NAMB";
 const char HM1X_COMMAND_EDR_ADR[] = "ADDE";
 const char HM1X_COMMAND_BLE_ADR[] = "ADDB";
+const char HM1X_COMMAND_BLE_ADR_SINGLE[] = "ADDR";
 const char HM1X_COMMAND_LAST_EDR[] = "RADE";
 const char HM1X_COMMAND_LAST_BLE[] = "RADB";
+const char HM1X_COMMAND_LAST_SINGLE[] = "RADD";
 const char HM1X_COMMAND_CLEAR_BOND_EDR[] = "BONDE";
 const char HM1X_COMMAND_CLEAR_BOND_BLE[] = "BONDB";
 const char HM1X_COMMAND_CLEAR_ADR_EDR[] = "CLEAE";
 const char HM1X_COMMAND_CLEAR_ADR_BLE[] = "CLEAB";
+const char HM1X_COMMAND_CLEAR_ADR_SINGLE[] = "CLEAR";
 const char HM1X_COMMAND_EDR_MODE[] = "ROLE";
 const char HM1X_COMMAND_BLE_MODE[] = "ROLB";
 const char HM1X_COMMAND_HIGH_SPEED_SPP[] = "HIGH";
@@ -63,6 +66,7 @@ const char HM1X_COMMAND_A_TO_B_MODE[] = "ATOB";
 const char HM1X_COMMAND_AUTHENTICATION_MODE[] = "AUTH";
 const char HM1X_COMMAND_EDR_PIN_CODE[] = "PINE";
 const char HM1X_COMMAND_BLE_PIN_CODE[] = "PINB";
+const char HM1X_COMMAND_PIN_CODE_SINGLE[] = "PASS";
 const char HM1X_COMMAND_COD[] = "COFD";
 const char HM1X_COMMAND_UPDATE_CON_PARAM[] = "COUP";
 const char HM1X_COMMAND_IBEACON_SWITCH[] = "IBEA";
@@ -115,8 +119,18 @@ typedef enum {
 } qwiic_bt_commands_t;
 #endif
 
-static const long btBauds[HM1X_BT::NUM_HM1X_BAUDS] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 320400};
+static const long btBauds[HM1X_BT::NUM_HM1X_BAUDS] = {1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400};
 
+// These are arrays that maps the required baudChar for each desired baud rate declared in the enum HM1X_baud_t
+static const uint8_t btBauds_HM10_11[HM1X_BT::NUM_HM1X_BAUDS] =        {3, 4, 5, 6, 7, 2, 1, 0, 8};
+static const uint8_t btBauds_HM16_17_18_19[HM1X_BT::NUM_HM1X_BAUDS] =  {0, 1, 2, 3, 4, 5, 6, 7, 8};
+static const uint8_t btBauds_HM12_13[HM1X_BT::NUM_HM1X_BAUDS] =        {0, 2, 3, 4, 5, 6, 7, 8, 0};
+
+static const uint8_t btBauds_validRange_HM10_11[2] =        {0, 8};
+static const uint8_t btBauds_validRange_HM16_17_18_19[2] =  {0, 8};
+static const uint8_t btBauds_validRange_HM12_13[2] =        {1, 7};
+
+// Class Constructor
 HM1X_BT::HM1X_BT(HM1X_model_t btModel)
 {
     _btModel = btModel;
@@ -128,6 +142,10 @@ HM1X_BT::HM1X_BT(HM1X_model_t btModel)
     _response = "";
 
     _polling = false;
+
+    // set model-specific variables
+    // _isEdrSupported, _btBauds_ptr, and _validBaudBounds_ptr
+    setModelSpecificVariables();
 
 #ifdef HM1X_SOFTWARE_SERIAL_ENABLED
     _softSerial = NULL;
@@ -638,10 +656,13 @@ HM1X_error_t HM1X_BT::notify(boolean enabled, boolean withAddress)
     return err;
 }
 
+// gets EDR name as return value
+// does not support HM-15/16/17/18/19
 String HM1X_BT::getEdrName(void)
 {
     char * name;
     String retName = "";
+
     name = (char *)malloc(32* sizeof(char));
     if (name != NULL)
     {
@@ -653,13 +674,21 @@ String HM1X_BT::getEdrName(void)
     return retName;
 }
 
-// AT+NAME, AT+NAMB -- Set EDR/BLE name
+// Set EDR name and copy it to the character array name
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::getEdrName(char * name)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     int retNameLen;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Create command string: AT+NAME?
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_NAME) + strlen(HM1X_QUERY_STRING) + 2, sizeof(char));
@@ -690,20 +719,38 @@ HM1X_error_t HM1X_BT::getEdrName(char * name)
     return HM1X_SUCCESS;
 }
 
+// Set the EDR device name with the input string parameter
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::setEdrName(String name)
 {
     char * edrChar;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
+
     edrChar = (char *) calloc(name.length() + 1, sizeof(char));
     name.toCharArray(edrChar, name.length() + 1);
     return setEdrName(edrChar);
 }
 
+// Set EDR name and copy it to the character array name
 HM1X_error_t HM1X_BT::setEdrName(const char * name)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     int nameLen;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     nameLen = strlen(name);
 
@@ -761,14 +808,29 @@ HM1X_error_t HM1X_BT::getBleName(char * name)
     char * command;
     char * response;
     int retNameLen;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_NAME), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_NAME);
+    }else{
+        // use HM1X_COMMAND_BLE_NAME as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_NAME);
+    }
 
     // Create command string: AT+NAMB?
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_NAME) + strlen(HM1X_QUERY_STRING) + 2, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 2, sizeof(char));
     if (command == NULL)
     {
         return HM1X_OUT_OF_MEMORY;
     }
-    strcat(command, HM1X_COMMAND_BLE_NAME);
+    strcat(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     // Allocate enough memory for a response (up to 28 bytes + "OK+Get:")
@@ -787,6 +849,7 @@ HM1X_error_t HM1X_BT::getBleName(char * name)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;
 }
@@ -805,6 +868,21 @@ HM1X_error_t HM1X_BT::setBleName(const char * name)
     char * command;
     char * response;
     int nameLen;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_NAME), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_NAME);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_NAME);
+    }
 
     nameLen = strlen(name);
 
@@ -814,12 +892,12 @@ HM1X_error_t HM1X_BT::setBleName(const char * name)
     }
 
     // Build command: e.g. AT+NAMBMY_BLE_DEVICE
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_NAME) + nameLen + 2, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + nameLen + 2, sizeof(char));
     if (command == NULL)
     {
         return HM1X_OUT_OF_MEMORY;
     }
-    strcat(command, HM1X_COMMAND_BLE_NAME);
+    strcat(command, command_no_ble);
     strcat(command, name);
 
     // Build expected response: e.g. OK+Set:MY_BLE_DEVICE
@@ -837,10 +915,13 @@ HM1X_error_t HM1X_BT::setBleName(const char * name)
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
 
+// checks EDR address
+// does not support HM-15/16/17/18/19
 String HM1X_BT::edrAddress(void)
 {
     char * address;
@@ -853,10 +934,18 @@ String HM1X_BT::edrAddress(void)
 }
 
 // AT+ADDE -- EDR address
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::edrAddress(char * retAddress)
 {
     char * command;
     char * response;
+
+    if ( (_btModel >= HM15) && (_btModel <= HM19))
+    {
+        // HM-15 to HM-19 does not support EDR
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_ADR) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
@@ -888,14 +977,30 @@ String HM1X_BT::bleAddress(void)
 }
 
 // AT+ADDB -- BLE address
+// AT+ADDR for non-dual devices
 HM1X_error_t HM1X_BT::bleAddress(char * retAddress)
 {
     char * command;
     char * response;
+    char *command_no_ble;
 
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_ADR) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_ADR_SINGLE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_ADR_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_NAME);
+    }
+
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    strcpy(command, HM1X_COMMAND_BLE_ADR);
+    strcpy(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     response = (char *) calloc(20 + 1, sizeof(char));
@@ -907,15 +1012,24 @@ HM1X_error_t HM1X_BT::bleAddress(char * retAddress)
     
     free(response);
     free(command);
+    free(command_no_ble);
 
     return HM1X_SUCCESS;
 }
 
 // AT+RADE, AT+RADB -- Last connected EDR/BLE address
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::lastEdrAddress(char * address)
 {
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     command = (char *) calloc(strlen(HM1X_COMMAND_LAST_EDR) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
@@ -939,10 +1053,25 @@ HM1X_error_t HM1X_BT::lastBleAddress(char * address)
 {
     char * command;
     char * response;
+    char *command_no_ble;
 
-    command = (char *) calloc(strlen(HM1X_COMMAND_LAST_BLE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_LAST_BLE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_LAST_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_LAST_BLE);
+    }
+
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    strcpy(command, HM1X_COMMAND_LAST_BLE);
+    strcpy(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     response = (char *) calloc(20 + 1, sizeof(char));
@@ -954,16 +1083,25 @@ HM1X_error_t HM1X_BT::lastBleAddress(char * address)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;
 }
 
 // AT+BONDE, AT+BONDB --- Clear EDR/BLE bond info
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::clearEdrBond(void)
 {
     HM1X_error_t err;
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Build command: e.g. AT+BONDE
     command = (char *) calloc(strlen(HM1X_COMMAND_CLEAR_BOND_EDR) + 1, sizeof(char));
@@ -1028,11 +1166,19 @@ HM1X_error_t HM1X_BT::clearBleBond(void)
 }
 
 // AT+CLEAE, AT+CLEAB -- Clear last connected EDR/BLE address
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::clearEdrConnected(void)
 {
     HM1X_error_t err;
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Build command: e.g. AT+CLEAE
     command = (char *) calloc(strlen(HM1X_COMMAND_CLEAR_ADR_EDR) + 1, sizeof(char));
@@ -1067,18 +1213,33 @@ HM1X_error_t HM1X_BT::clearBleConnected(void)
     HM1X_error_t err;
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_CLEAR_ADR_BLE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_CLEAR_ADR_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_CLEAR_ADR_BLE);
+    }
 
     // Build command: e.g. AT+CLEAB
-    command = (char *) calloc(strlen(HM1X_COMMAND_CLEAR_ADR_BLE) + 1, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + 1, sizeof(char));
     if (command == NULL)
     {
         return HM1X_OUT_OF_MEMORY;
     }
-    strcat(command, HM1X_COMMAND_CLEAR_ADR_BLE);
+    strcat(command, command_no_ble);
 
     // Build expected response: e.g. OK+CLEAB
     response = (char *) calloc(strlen(HM1X_RESPONSE_OK) + strlen(HM1X_RESPONSE_PLUS)
-                    + strlen(HM1X_COMMAND_CLEAR_ADR_BLE) + 1, sizeof(char));
+                    + strlen(command_no_ble) + 1, sizeof(char));
     if (response == NULL)
     {
         free(command);
@@ -1086,21 +1247,30 @@ HM1X_error_t HM1X_BT::clearBleConnected(void)
     }
     strcat(response, HM1X_RESPONSE_OK);
     strcat(response, HM1X_RESPONSE_PLUS);
-    strcat(response, HM1X_COMMAND_CLEAR_ADR_BLE);
+    strcat(response, command_no_ble);
 
     err = sendCommandWithResponseAndTimeout(command, response, HM1X_DEFAULT_TIMEOUT);
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
 
 // AT+ROLE, AT+ROLB -- EDR/BLE mode
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::getEdrMode(HM1X_edr_mode_t * mode)
 {
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Set command string: "AT+ROLE?""
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_MODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
@@ -1135,12 +1305,21 @@ HM1X_error_t HM1X_BT::getEdrMode(HM1X_edr_mode_t * mode)
     return HM1X_SUCCESS;
 }
 
+// sets the EDR mode
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::setEdrMode(HM1X_edr_mode_t mode)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     char modeParam;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
     
     if (mode == EDR_MODE_INVALID)
     {
@@ -1173,11 +1352,26 @@ HM1X_error_t HM1X_BT::getBleMode(HM1X_ble_mode_t * mode)
 {
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_MODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_MODE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_MODE);
+    }
 
     // Set command string: "AT+ROLE?""
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_MODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    strcpy(command, HM1X_COMMAND_BLE_MODE);
+    strcpy(command, command_no_ble);
     strcat(command, HM1X_QUERY_STRING);
 
     response = (char *) calloc(sizeof(HM1X_RESPONSE_OK) + sizeof(HM1X_RESPONSE_GET) + 2, sizeof(char));
@@ -1203,6 +1397,7 @@ HM1X_error_t HM1X_BT::getBleMode(HM1X_ble_mode_t * mode)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;
 }
@@ -1213,16 +1408,31 @@ HM1X_error_t HM1X_BT::setBleMode(HM1X_ble_mode_t mode)
     char * command;
     char * response;
     char modeParam;
+    char *command_no_ble;
     
     if (mode == EDR_MODE_INVALID)
     {
         return HM1X_UNEXPECTED_RESPONSE;
     }
 
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_MODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for Edr (main)
+        strcpy(command_no_ble, HM1X_COMMAND_EDR_MODE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_MODE);
+    }
+
     // Build command: e.g. AT+ROLB0
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_MODE) + 2, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + 2, sizeof(char));
     modeParam = (mode == EDR_SLAVE) ? '0' : '1';
-    sprintf(command, "%s%c", HM1X_COMMAND_BLE_MODE, modeParam);
+    sprintf(command, "%s%c", command_no_ble, modeParam);
 
     // Build expected response: e.g. OK+Set:0
     response = (char *) calloc(strlen(HM1X_RESPONSE_OK) + strlen(HM1X_RESPONSE_SET) + 2, sizeof(char));
@@ -1237,6 +1447,7 @@ HM1X_error_t HM1X_BT::setBleMode(HM1X_ble_mode_t mode)
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
@@ -1273,13 +1484,20 @@ HM1X_error_t HM1X_BT::enableHighSpeedSPP(boolean enabled)
     return err;
 }
 
-
+// This is only supported in HM12/13/14
 HM1X_error_t HM1X_BT::enableDualMode(boolean enabled)
 {
     HM1X_error_t err;
     char * command;
     char * response;
     char hsParam;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Build command: e.g. AT+DUAL0
     command = (char *) calloc(strlen(HM1X_COMMAND_DUAL_WORK_MODE) + 2, sizeof(char));
@@ -1400,10 +1618,18 @@ HM1X_error_t HM1X_BT::enableAuthenticationMode(boolean enable)
 }
 
 // AT+PINE, AT+PINB -- EDR/BLE PIN Code
+// does not support HM-15/16/17/18/19
 HM1X_error_t HM1X_BT::getEdrPin(char * code)
 {
     char * command;
     char * response;
+
+    // Check if EDR is supported
+    if ( !_isEdrSupported )
+    {
+        // return error
+        return HM1X_ERROR_ER;
+    }
 
     // Set command string: "AT+PINE?""
     command = (char *) calloc(strlen(HM1X_COMMAND_EDR_PIN_CODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
@@ -1428,11 +1654,26 @@ HM1X_error_t HM1X_BT::getBlePin(char * code)
 {
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for single
+        strcpy(command_no_ble, HM1X_COMMAND_PIN_CODE_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_PIN_CODE);
+    }
 
     // Set command string: "AT+PINB?""
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + strlen(HM1X_QUERY_STRING) + 1, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    sprintf(command, "%s%s", HM1X_COMMAND_BLE_PIN_CODE, HM1X_QUERY_STRING);
+    sprintf(command, "%s%s", command_no_ble, HM1X_QUERY_STRING);
 
     response = (char *) calloc(sizeof(HM1X_RESPONSE_OK) + sizeof(HM1X_RESPONSE_GET) + 8, sizeof(char));
     if (response == NULL) return HM1X_OUT_OF_MEMORY;
@@ -1443,6 +1684,7 @@ HM1X_error_t HM1X_BT::getBlePin(char * code)
 
     free(response);
     free(command);
+    free(command_no_ble);
     
     return HM1X_SUCCESS;    
 }
@@ -1483,14 +1725,30 @@ HM1X_error_t HM1X_BT::setBlePin(char * code)
     HM1X_error_t err;
     char * command;
     char * response;
+    char *command_no_ble;
+
+    command_no_ble = (char*) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE), sizeof(char));
+    if (command_no_ble == NULL)
+    {
+        return HM1X_OUT_OF_MEMORY;
+    }
+    // check if EDR is disabled
+    if ( !_isEdrSupported ){
+        // use the code for single
+        strcpy(command_no_ble, HM1X_COMMAND_PIN_CODE_SINGLE);
+    }else{
+        // use as is
+        strcpy(command_no_ble, HM1X_COMMAND_BLE_PIN_CODE);
+    }
+    
 
     if (strlen(code) > 6) return HM1X_UNEXPECTED_RESPONSE;
     // TODO: Should check if the code is numeric here
 
     // Build command: e.g. AT+EDR1234
-    command = (char *) calloc(strlen(HM1X_COMMAND_BLE_PIN_CODE) + 8, sizeof(char));
+    command = (char *) calloc(strlen(command_no_ble) + 8, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
-    sprintf(command, "%s%s", HM1X_COMMAND_BLE_PIN_CODE, code);
+    sprintf(command, "%s%s", command_no_ble, code);
 
     // Build expected response: e.g. OK+Set:1234
     response = (char *) calloc(strlen(HM1X_RESPONSE_OK) + strlen(HM1X_RESPONSE_SET) + 8, sizeof(char));
@@ -1505,6 +1763,7 @@ HM1X_error_t HM1X_BT::setBlePin(char * code)
     
     free(command);
     free(response);
+    free(command_no_ble);
 
     return err;
 }
@@ -2275,44 +2534,22 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     char * command;
     char * response;
     char * hsParam;
-    char * baudChar;
-
-    if ((atob == HM1X_BAUD_INVALID) || (atob >= NUM_HM1X_BAUDS))
-    {
-        return HM1X_UNEXPECTED_RESPONSE;
-    }
+    char * baudChar = (char*)"0";
+    uint8_t baudCharNum;
 
     command = (char *) calloc(strlen(HM1X_COMMAND_BAUD) + 2, sizeof(char));
     if (command == NULL) return HM1X_OUT_OF_MEMORY;
 
     // Build command: e.g. AT+BAUD2
-    switch (atob)
-    {
-        case HM1X_BAUD_4800:
-            baudChar = "1";
-            break;
-        case HM1X_BAUD_9600:
-            baudChar = "2";
-            break;
-        case HM1X_BAUD_19200:
-            baudChar = "3";
-            break;
-        case HM1X_BAUD_38400:
-            baudChar = "4";
-            break;
-        case HM1X_BAUD_57600:
-            baudChar = "5";
-            break;
-        case HM1X_BAUD_115200:
-            baudChar = "6";
-            break;
-        case HM1X_BAUD_230400:
-            baudChar = "7";
-            break;
-        default:
-            baudChar = "2";
-            break;
+    // Handle cases according to model
+    if (findBaudFromArray(atob, baudCharNum) != HM1X_SUCCESS){
+
+        return HM1X_UNEXPECTED_RESPONSE;
+    
     }
+
+    baudChar[0] = (char)'0' + baudCharNum;
+
     strcpy(command, HM1X_COMMAND_BAUD);
     strcat(command, baudChar);
 
@@ -2326,7 +2563,7 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
     strcat(response, HM1X_RESPONSE_OK);
     strcat(response, HM1X_RESPONSE_SET);
     strcat(response, baudChar);
-
+    
     err = sendCommandWithResponseAndTimeout(command, response, HM1X_DEFAULT_TIMEOUT);
     
     free(command);
@@ -2338,6 +2575,30 @@ HM1X_error_t HM1X_BT::setBaud(HM1X_baud_t atob)
 /////////////
 // Private //
 /////////////
+
+// returns the integer that corresponds to the correct baud rate depending on the model
+HM1X_error_t HM1X_BT::findBaudFromArray(HM1X_baud_t atob, uint8_t &num){
+    
+    // check bounds
+    if ((atob < _validBaudBounds_ptr[0]) || (atob > _validBaudBounds_ptr[1]))
+    {
+        // out of bounds
+        return HM1X_UNEXPECTED_RESPONSE;
+    }
+
+    // look for the index that corresponds to atob
+    for( uint8_t i = _validBaudBounds_ptr[0]; i <= _validBaudBounds_ptr[1]; ++i ){
+        if (atob == *(_btBauds_ptr + i))
+        {
+            num = i;
+            return HM1X_SUCCESS;
+        }
+    }
+
+    // invalid atob for the particular model
+    return HM1X_UNEXPECTED_RESPONSE;
+    
+}
 
 HM1X_error_t HM1X_BT::init(void)
 {
@@ -2650,40 +2911,52 @@ void HM1X_BT::setI2cAddress(uint8_t address)
 
 HM1X_error_t HM1X_BT::forceBaud(unsigned long baud)
 {
+    HM1X_error_t err;
     switch (baud) {
+    case 1200:
+        err = forceBaud(HM1X_BAUD_1200);
+        break;
+    case 2400:
+        err = forceBaud(HM1X_BAUD_2400);
+        break;
     case 4800:
-        forceBaud(HM1X_BAUD_4800);
+        err = forceBaud(HM1X_BAUD_4800);
         break;
     case 9600:
-        forceBaud(HM1X_BAUD_9600);
+        err = forceBaud(HM1X_BAUD_9600);
         break;
     case 19200:
-        forceBaud(HM1X_BAUD_19200);
+        err = forceBaud(HM1X_BAUD_19200);
         break;
     case 38400:
-        forceBaud(HM1X_BAUD_38400);
+        err = forceBaud(HM1X_BAUD_38400);
         break;
     case 57600:
-        forceBaud(HM1X_BAUD_57600);
+        err = forceBaud(HM1X_BAUD_57600);
         break;
     case 115200:
-        forceBaud(HM1X_BAUD_115200);
+        err = forceBaud(HM1X_BAUD_115200);
         break;
     case 230400:
-        forceBaud(HM1X_BAUD_230400);
+        err = forceBaud(HM1X_BAUD_230400);
         break;
     default:
-        // Do nothing on unsupported baud
-        break;
+        // Return error on unsupported baud
+        err = HM1X_ERROR_ER;
     }
+
+    return err;
 }
 
+// sweeps for all possible baud rates then force-set to the indicated baud rate
 HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
 {    
     HM1X_error_t err;
+    uint8_t idx;
 
-    for (uint8_t i = HM1X_BAUD_4800; i < NUM_HM1X_BAUDS; i++) 
+    for (uint8_t i = _validBaudBounds_ptr[0]; i < _validBaudBounds_ptr[1]; i++) 
     {
+        idx = _btBauds_ptr[i];
         if (0)
         {
             
@@ -2691,7 +2964,7 @@ HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
 #ifdef HM1X_SOFTWARE_SERIAL_ENABLED
         else if (_softSerial != NULL)
         {
-            _softSerial->begin(btBauds[i]);
+            _softSerial->begin(btBauds[idx]);
         }
 #endif
 #ifdef HM1X_I2C_ENABLED
@@ -2703,7 +2976,7 @@ HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
 #ifdef HM1X_HARDWARE_SERIAL_ENABLED
         else if (_serialPort != NULL)
         {
-            _serialPort->begin(btBauds[i]);
+            _serialPort->begin(btBauds[idx]);
         }
 #endif
         err = setBaud(baud);
@@ -2713,4 +2986,38 @@ HM1X_error_t HM1X_BT::forceBaud(HM1X_baud_t baud)
         }
     }
     return err;
+}
+
+// set model-specific variables
+// _isEdrSupported, _btBauds_ptr, and _validBaudBounds_ptr
+void HM1X_BT::setModelSpecificVariables(void){
+
+    switch(_btModel)
+    {
+        case HM10:
+        case HM11:
+            // HM-10/11: only allow P0~8
+            _isEdrSupported = false;
+            _validBaudBounds_ptr = &btBauds_validRange_HM10_11[0];
+            _btBauds_ptr = &btBauds_HM10_11[0];
+            break;
+        case HM12:
+        case HM13:
+            // HM-12/13
+            _isEdrSupported = true;
+            _validBaudBounds_ptr = &btBauds_validRange_HM12_13[0];
+            _btBauds_ptr = &btBauds_HM12_13[0];
+            break;
+        case HM14:
+        case HM15:
+        case HM16:
+        case HM17:
+        case HM18:
+        case HM19:
+            // HM-14 to 19
+            _isEdrSupported = false;
+            _validBaudBounds_ptr = &btBauds_validRange_HM16_17_18_19[0];
+            _btBauds_ptr = &btBauds_HM16_17_18_19[0];
+            break;
+    }
 }
