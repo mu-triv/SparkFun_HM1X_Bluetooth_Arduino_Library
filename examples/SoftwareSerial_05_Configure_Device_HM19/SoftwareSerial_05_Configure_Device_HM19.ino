@@ -36,7 +36,7 @@
 // in this sketch it is HM19
 HM1X_BT bt(HM1X_BT::HM19);
 
-SoftwareSerial btSerial(3, 4);
+SoftwareSerial btSerial(2, 4);
 
 // BLE and EDR device names
 String edrName = "MyEDR";
@@ -115,20 +115,33 @@ void setup() {
   HM1X_BT::HM1X_ble_mode_t mode;
   if (bt.getBleMode(&mode) == HM1X_SUCCESS){
     Serial.print("BLE mode before: ");
-    Serial.println(mode);  
+    if (mode == HM1X_BT::BLE_PERIPHERAL)
+    {
+      Serial.println("BLE_PERIPHERAL");
+    }
+    else
+    {
+      Serial.println("BLE_CENTRAL");
+    }
   }
 
   // set BLE mode
-  mode = (HM1X_BT::HM1X_ble_mode_t)1;
+  mode = HM1X_BT::BLE_CENTRAL;
   if (bt.setBleMode(mode) == HM1X_SUCCESS){
-    Serial.print("changing... ");
-    Serial.println(mode);  
+    Serial.println("changing... BLE_CENTRAL");
   }
 
   // get BLE mode again
   if (bt.getBleMode(&mode) == HM1X_SUCCESS){
     Serial.print("BLE mode after: ");
-    Serial.println(mode);  
+    if (mode == HM1X_BT::BLE_PERIPHERAL)
+    {
+      Serial.println("BLE_PERIPHERAL");
+    }
+    else
+    {
+      Serial.println("BLE_CENTRAL");
+    }
   }
 
   // 4: Pin
@@ -142,8 +155,7 @@ void setup() {
   // set BLE pin to an arbitrary PIN
   strcpy(pin, "784923");
   if (bt.setBlePin(pin) == HM1X_SUCCESS){
-    Serial.print("changing... ");
-    Serial.println(mode);  
+    Serial.println("changing... ");
   }
 
   // get BLE pin again
@@ -156,6 +168,7 @@ void setup() {
     Serial.println("Resetting BT module. Wait a few seconds.");
     bt.reset();
   }
+  free(pin);
 }
 
 void loop() {
