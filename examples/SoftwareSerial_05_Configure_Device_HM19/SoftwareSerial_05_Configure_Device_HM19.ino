@@ -18,7 +18,7 @@
   Also prints out BLE addresses (not configurable).
 
   Works well with a DSD-Tech HM-19 board -- 
-  connecting via software serial (D3, D4)
+  connecting via software serial (D2, D4)
 
   Hardware Connections:
   DSD-Tech HM-19 ------------------- Arduino Uno
