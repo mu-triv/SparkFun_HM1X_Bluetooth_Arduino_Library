@@ -670,6 +670,10 @@ String HM1X_BT::getEdrName(void)
         {
             retName = String(name);
         }
+        else 
+        {
+            free(name);
+        }
     }
     return retName;
 }
@@ -734,7 +738,9 @@ HM1X_error_t HM1X_BT::setEdrName(String name)
 
     edrChar = (char *) calloc(name.length() + 1, sizeof(char));
     name.toCharArray(edrChar, name.length() + 1);
-    return setEdrName(edrChar);
+    int result = setEdrName(edrChar);
+    free(edrChar);
+    return result;
 }
 
 // Set EDR name and copy it to the character array name
@@ -797,6 +803,10 @@ String HM1X_BT::getBleName(void)
         if (getBleName(name) == HM1X_SUCCESS)
         {
             retName = String(name);
+        }
+        else 
+        {
+            free(name);
         }
     }
     return retName;
@@ -2022,6 +2032,7 @@ HM1X_error_t HM1X_BT::getiBeaconMajor(uint16_t * version)
 
     free(response);
     free(command);
+    free(hexMajor);
     
     return HM1X_SUCCESS;
 }
@@ -2083,6 +2094,7 @@ HM1X_error_t HM1X_BT::getiBeaconMinor(uint16_t * version)
 
     free(response);
     free(command);
+    free(hexMinor);
     
     return HM1X_SUCCESS;
 }
@@ -2643,7 +2655,10 @@ HM1X_error_t HM1X_BT::sendCommandWithResponseAndTimeout(const char * command, ch
     readAvailable(response);
     
     // Check for expected response
-    if (strcmp(response, expectedResponse) == 0)
+    int result = strcmp(response, expectedResponse);
+    free(response);
+
+    if (result == 0)
     {
         return HM1X_SUCCESS;
     }
@@ -2675,6 +2690,8 @@ int HM1X_BT::sendCommandWithTimeout(const char * command, char ** responseDest, 
     }
     retVal = readAvailable(response);
     strcpy(*responseDest, response);
+    free(response);
+
     return retVal;
 }
 
